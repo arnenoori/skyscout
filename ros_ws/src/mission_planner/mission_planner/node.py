@@ -2,11 +2,12 @@
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool, Float32
 from geometry_msgs.msg import Point
 from vision_msgs.msg import Detection2DArray
 import json
 import enum
+import math
 
 
 class MissionState(enum.Enum):
@@ -30,6 +31,9 @@ class MissionPlannerNode(Node):
         # State management
         self.current_state = MissionState.IDLE
         self.current_mission = None
+        self.waypoints = []
+        self.current_waypoint_index = 0
+        self.detected_objects = []
 
         # Create subscribers
         self.mission_subscriber = self.create_subscription(
@@ -48,6 +52,14 @@ class MissionPlannerNode(Node):
         self.mission_status_publisher = self.create_publisher(
             String, "mission_status", 10
         )
+
+        # Navigation control publishers
+        self.arm_publisher = self.create_publisher(Bool, "navigation/arm", 10)
+        self.takeoff_publisher = self.create_publisher(
+            Float32, "navigation/takeoff", 10
+        )
+        self.land_publisher = self.create_publisher(Bool, "navigation/land", 10)
+        self.rtl_publisher = self.create_publisher(Bool, "navigation/rtl", 10)
 
         # Create timer for mission execution
         self.execution_timer = self.create_timer(1.0, self.execute_mission_step)
@@ -89,8 +101,14 @@ class MissionPlannerNode(Node):
         """Execute mission steps based on current state."""
         if self.current_state == MissionState.PLANNING:
             self.plan_mission()
+        elif self.current_state == MissionState.ARMING:
+            self.arm_drone()
+        elif self.current_state == MissionState.TAKEOFF:
+            self.takeoff()
         elif self.current_state == MissionState.EXECUTING:
             self.execute_mission()
+        elif self.current_state == MissionState.LANDING:
+            self.land_drone()
 
     def plan_mission(self):
         """Plan mission execution based on mission type and parameters."""
@@ -102,27 +120,88 @@ class MissionPlannerNode(Node):
         )
 
         # Generate waypoints based on flight pattern
-        if self.current_mission["flight_pattern"] == "grid":
-            # TODO: Implement grid pattern generation
-            pass
-        elif self.current_mission["flight_pattern"] == "spiral":
-            # TODO: Implement spiral pattern generation
-            pass
+        params = self.current_mission["parameters"]
+        altitude = params["altitude"]
+        coverage_area = params["coverage_area"]
 
+        if self.current_mission["flight_pattern"] == "grid":
+            self.waypoints = self._generate_grid_pattern(coverage_area, altitude)
+        elif self.current_mission["flight_pattern"] == "spiral":
+            self.waypoints = self._generate_spiral_pattern(coverage_area, altitude)
+        elif self.current_mission["flight_pattern"] == "perimeter":
+            self.waypoints = self._generate_perimeter_pattern(coverage_area, altitude)
+        else:
+            # Default to single point
+            self.waypoints = [Point(x=0, y=0, z=altitude)]
+
+        self.current_waypoint_index = 0
+        self.get_logger().info(f"Generated {len(self.waypoints)} waypoints")
+
+        # Start execution
+        self.current_state = MissionState.ARMING
+        self.publish_status(
+            f"Mission planned with {len(self.waypoints)} waypoints, arming drone"
+        )
+
+    def arm_drone(self):
+        """Arm the drone for flight."""
+        self.get_logger().info("Arming drone")
+        arm_msg = Bool()
+        arm_msg.data = True
+        self.arm_publisher.publish(arm_msg)
+
+        # Move to takeoff state after a delay
+        # In real implementation, wait for arm confirmation
+        self.current_state = MissionState.TAKEOFF
+        self.publish_status("Drone armed, initiating takeoff")
+
+    def takeoff(self):
+        """Command drone to takeoff."""
+        altitude = self.current_mission["parameters"]["altitude"]
+        self.get_logger().info(f"Taking off to {altitude}m")
+
+        takeoff_msg = Float32()
+        takeoff_msg.data = altitude
+        self.takeoff_publisher.publish(takeoff_msg)
+
+        # Move to executing state after a delay
+        # In real implementation, wait for altitude reached
         self.current_state = MissionState.EXECUTING
-        self.publish_status("Mission planned, beginning execution")
+        self.publish_status(f"Takeoff initiated to {altitude}m")
 
     def execute_mission(self):
         """Execute the current mission step."""
-        # TODO: Implement actual mission execution logic
-        # For now, just publish a test waypoint
-        waypoint = Point()
-        waypoint.x = 10.0
-        waypoint.y = 10.0
-        waypoint.z = self.current_mission["parameters"]["altitude"]
+        if self.current_waypoint_index >= len(self.waypoints):
+            # Mission complete
+            self.get_logger().info("All waypoints visited, mission complete")
+            self.current_state = MissionState.LANDING
+            self.publish_status("Mission complete, landing")
+            return
 
+        # Send current waypoint
+        waypoint = self.waypoints[self.current_waypoint_index]
         self.waypoint_publisher.publish(waypoint)
-        self.get_logger().debug("Published waypoint")
+        self.get_logger().info(
+            f"Navigating to waypoint {self.current_waypoint_index + 1}/{len(self.waypoints)}: "
+            f"x={waypoint.x:.1f}, y={waypoint.y:.1f}, z={waypoint.z:.1f}"
+        )
+
+        # Move to next waypoint (in real implementation, wait for waypoint reached)
+        self.current_waypoint_index += 1
+
+    def land_drone(self):
+        """Land the drone."""
+        self.get_logger().info("Landing drone")
+        land_msg = Bool()
+        land_msg.data = True
+        self.land_publisher.publish(land_msg)
+
+        # Reset state
+        self.current_state = MissionState.IDLE
+        self.current_mission = None
+        self.waypoints = []
+        self.current_waypoint_index = 0
+        self.publish_status("Drone landed, mission complete")
 
     def validate_mission_plan(self, mission_data):
         """Validate mission plan structure and safety parameters."""
@@ -155,6 +234,58 @@ class MissionPlannerNode(Node):
             {"state": self.current_state.name, "message": status_message}
         )
         self.mission_status_publisher.publish(status_msg)
+
+    def _generate_grid_pattern(self, coverage_area: dict, altitude: float) -> list:
+        """Generate grid pattern waypoints."""
+        waypoints = []
+        radius = coverage_area.get("radius", 100)
+
+        # Simple grid with 20m spacing
+        spacing = 20
+        num_lines = int(radius * 2 / spacing)
+
+        for i in range(num_lines):
+            y = -radius + i * spacing
+            if i % 2 == 0:
+                # Left to right
+                waypoints.append(Point(x=-radius, y=y, z=altitude))
+                waypoints.append(Point(x=radius, y=y, z=altitude))
+            else:
+                # Right to left
+                waypoints.append(Point(x=radius, y=y, z=altitude))
+                waypoints.append(Point(x=-radius, y=y, z=altitude))
+
+        return waypoints
+
+    def _generate_spiral_pattern(self, coverage_area: dict, altitude: float) -> list:
+        """Generate spiral pattern waypoints."""
+        waypoints = []
+        radius = coverage_area.get("radius", 100)
+
+        # Archimedean spiral
+        num_points = 20
+        for i in range(num_points):
+            angle = i * 2 * math.pi / 5  # 5 revolutions
+            r = (i / num_points) * radius
+            x = r * math.cos(angle)
+            y = r * math.sin(angle)
+            waypoints.append(Point(x=x, y=y, z=altitude))
+
+        return waypoints
+
+    def _generate_perimeter_pattern(self, coverage_area: dict, altitude: float) -> list:
+        """Generate perimeter pattern waypoints."""
+        waypoints = []
+        radius = coverage_area.get("radius", 100)
+
+        # Square perimeter
+        waypoints.append(Point(x=-radius, y=-radius, z=altitude))
+        waypoints.append(Point(x=radius, y=-radius, z=altitude))
+        waypoints.append(Point(x=radius, y=radius, z=altitude))
+        waypoints.append(Point(x=-radius, y=radius, z=altitude))
+        waypoints.append(Point(x=-radius, y=-radius, z=altitude))  # Close the loop
+
+        return waypoints
 
 
 def main(args=None):
