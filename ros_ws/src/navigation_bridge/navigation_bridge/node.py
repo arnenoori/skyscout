@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float32, String, Bool
+from std_srvs.srv import SetBool
 import json
 
 from .mock_drone import MockDrone
@@ -60,6 +61,10 @@ class NavigationBridgeNode(Node):
             Bool, "navigation/rtl", self.rtl_callback, 10
         )
 
+        self.simulate_subscriber = self.create_subscription(
+            String, "navigation/simulate", self.simulate_callback, 10
+        )
+
         # Create publishers
         self.position_publisher = self.create_publisher(
             Point, "navigation/current_position", 10
@@ -79,6 +84,11 @@ class NavigationBridgeNode(Node):
         # Create timer for drone updates (if using mock)
         if self.use_mock:
             self.update_timer = self.create_timer(0.05, self.update_drone)  # 20Hz
+
+        # Create service for switching connection mode
+        self.mode_service = self.create_service(
+            SetBool, "set_connection_mode", self.set_connection_mode_callback
+        )
 
         self.get_logger().info("Navigation Bridge initialized")
 
@@ -228,6 +238,67 @@ class NavigationBridgeNode(Node):
 
         # Also log the status
         self.get_logger().debug(f"Status: {status_data}")
+
+    def set_connection_mode_callback(self, request, response):
+        """Handle connection mode change requests."""
+        new_use_mock = request.data  # True for mock, False for real
+
+        if new_use_mock != self.use_mock:
+            self.get_logger().info(
+                f"Switching connection mode to {'mock' if new_use_mock else 'real'}"
+            )
+
+            # Stop current drone
+            if hasattr(self, "update_timer") and self.update_timer:
+                self.update_timer.cancel()
+                self.update_timer = None
+
+            # Switch to new mode
+            self.use_mock = new_use_mock
+
+            if self.use_mock:
+                self.drone = MockDrone()
+                self.update_timer = self.create_timer(0.05, self.update_drone)
+                self.get_logger().info("Switched to mock drone")
+            else:
+                # TODO: Implement real MAVLink connection
+                self.get_logger().warn(
+                    "Real MAVLink not implemented yet, keeping mock drone"
+                )
+                self.drone = MockDrone()
+                self.use_mock = True
+
+            self.publish_status(
+                {"action": "mode_changed", "mode": "mock" if self.use_mock else "real"}
+            )
+
+        response.success = True
+        response.message = (
+            f"Connection mode set to {'mock' if new_use_mock else 'real'}"
+        )
+        return response
+
+    def simulate_callback(self, msg):
+        """Handle simulation commands for mock drone."""
+        if not self.use_mock:
+            self.get_logger().warn("Simulation commands only work in mock mode")
+            return
+
+        command = msg.data
+        if command.startswith("SIMULATE:"):
+            parts = command.split(":")
+            if len(parts) >= 2:
+                scenario = parts[1]
+                value = parts[2] if len(parts) > 2 else None
+
+                if hasattr(self.drone, "simulate_scenario"):
+                    self.drone.simulate_scenario(scenario, value)
+                    self.get_logger().info(f"Simulated scenario: {scenario} = {value}")
+
+                    # Publish status update
+                    self.publish_status(
+                        {"action": "simulation", "scenario": scenario, "value": value}
+                    )
 
 
 def main(args=None):

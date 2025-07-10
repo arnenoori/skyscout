@@ -19,6 +19,11 @@ class CommandInterfaceNode(Node):
             String, "natural_language_command", 10
         )
 
+        # Create publisher for simulation commands
+        self.simulation_publisher = self.create_publisher(
+            String, "navigation/simulate", 10
+        )
+
         # Create subscriber for receiving commands from web interface
         self.web_command_subscriber = self.create_subscription(
             String, "web_command", self.web_command_callback, 10
@@ -28,11 +33,18 @@ class CommandInterfaceNode(Node):
 
     def web_command_callback(self, msg):
         """Process incoming commands from web interface."""
-        self.get_logger().info(f"Received command: {msg.data}")
+        command = msg.data
+        self.get_logger().info(f"Received command: {command}")
 
-        # Forward the command to LLM agent
-        self.command_publisher.publish(msg)
-        self.get_logger().info("Command forwarded to LLM agent")
+        # Check for simulation commands
+        if command.startswith("SIMULATE:"):
+            # Forward simulation commands to navigation
+            self.simulation_publisher.publish(msg)
+            self.get_logger().info(f"Forwarded simulation command: {command}")
+        else:
+            # Forward regular commands to LLM agent
+            self.command_publisher.publish(msg)
+            self.get_logger().info("Command forwarded to LLM agent")
 
 
 def main(args=None):

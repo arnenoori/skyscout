@@ -245,3 +245,25 @@ class MockDrone:
             "airspeed": self.horizontal_speed if not self.target_reached else 0,
             "target_reached": self.target_reached,
         }
+
+    def simulate_scenario(self, scenario: str, value: str = None):
+        """Handle simulation commands for testing."""
+        if scenario == "BATTERY":
+            if value:
+                try:
+                    self.battery_percent = float(value)
+                    self.battery_percent = max(0, min(100, self.battery_percent))
+                except ValueError:
+                    pass
+        elif scenario == "GPS":
+            if value == "LOST":
+                # Simulate GPS loss by setting mode
+                self.mode = DroneMode.LAND
+        elif scenario == "WIND":
+            if value == "STRONG":
+                # Could add position drift here
+                pass
+        elif scenario == "OBSTACLE":
+            if value == "AHEAD":
+                # Stop movement
+                self.target_reached = True

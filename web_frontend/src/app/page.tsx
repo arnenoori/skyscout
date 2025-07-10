@@ -6,6 +6,8 @@ import { TelemetryDisplay } from '@/components/TelemetryDisplay';
 import { MissionStatus } from '@/components/MissionStatus';
 import { CommandHistory } from '@/components/CommandHistory';
 import { DroneMap } from '@/components/DroneMap';
+import { ConnectionModeSelector } from '@/components/ConnectionModeSelector';
+import { MockControlPanel } from '@/components/MockControlPanel';
 import { ROSProvider } from '@/contexts/ROSContext';
 
 export default function Home() {
@@ -24,8 +26,13 @@ export default function Home() {
       <div className="min-h-screen bg-background">
         <header className="border-b">
           <div className="container mx-auto px-4 py-4">
-            <h1 className="text-2xl font-bold">SkyScout</h1>
-            <p className="text-sm text-muted-foreground">Natural Language Drone Control</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">SkyScout</h1>
+                <p className="text-sm text-muted-foreground">Natural Language Drone Control</p>
+              </div>
+              <ConnectionModeSelector />
+            </div>
           </div>
         </header>
 
@@ -42,6 +49,7 @@ export default function Home() {
             <div className="space-y-6">
               <TelemetryDisplay />
               <CommandHistory commands={commands} />
+              <MockControlPanel />
             </div>
           </div>
         </main>

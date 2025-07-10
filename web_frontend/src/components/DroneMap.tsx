@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useROS } from '@/contexts/ROSContext';
 
 interface Position {
@@ -11,7 +12,7 @@ interface Position {
 
 export function DroneMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { subscribeToTopic, connected } = useROS();
+  const { subscribeToTopic, connected, connectionMode } = useROS();
   const [dronePosition, setDronePosition] = useState<Position>({ x: 0, y: 0 });
   const [waypoints, setWaypoints] = useState<Position[]>([]);
 
@@ -126,9 +127,14 @@ export function DroneMap() {
   }, [dronePosition, waypoints]);
 
   return (
-    <Card>
+    <Card className={connectionMode === 'mock' ? 'border-yellow-500/50' : ''}>
       <CardHeader>
-        <CardTitle className="text-lg">Drone Position</CardTitle>
+        <CardTitle className="text-lg flex items-center justify-between">
+          <span>Drone Position</span>
+          {connectionMode === 'mock' && (
+            <Badge variant="warning" className="text-xs">SIMULATED</Badge>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <canvas

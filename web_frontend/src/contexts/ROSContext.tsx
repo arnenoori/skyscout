@@ -6,10 +6,12 @@ import ROSLIB from 'roslib';
 interface ROSContextType {
   ros: ROSLIB.Ros | null;
   connected: boolean;
+  connectionMode: 'mock' | 'real';
   connect: () => void;
   disconnect: () => void;
   sendCommand: (command: string) => void;
   subscribeToTopic: (topicName: string, messageType: string, callback: (message: any) => void) => () => void;
+  setConnectionMode: (mode: 'mock' | 'real') => void;
 }
 
 const ROSContext = createContext<ROSContextType | undefined>(undefined);
@@ -17,6 +19,13 @@ const ROSContext = createContext<ROSContextType | undefined>(undefined);
 export function ROSProvider({ children }: { children: React.ReactNode }) {
   const [ros, setRos] = useState<ROSLIB.Ros | null>(null);
   const [connected, setConnected] = useState(false);
+  const [connectionMode, setConnectionModeState] = useState<'mock' | 'real'>(() => {
+    // Load from localStorage on init
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('skyscout-connection-mode') as 'mock' | 'real') || 'mock';
+    }
+    return 'mock';
+  });
 
   const connect = useCallback(() => {
     const rosInstance = new ROSLIB.Ros({
@@ -88,6 +97,28 @@ export function ROSProvider({ children }: { children: React.ReactNode }) {
     };
   }, [ros]);
 
+  const setConnectionMode = useCallback((mode: 'mock' | 'real') => {
+    setConnectionModeState(mode);
+    localStorage.setItem('skyscout-connection-mode', mode);
+
+    // Call service to update navigation bridge
+    if (ros && connected) {
+      const service = new ROSLIB.Service({
+        ros: ros,
+        name: '/set_connection_mode',
+        serviceType: 'std_srvs/SetBool'
+      });
+
+      const request = new ROSLIB.ServiceRequest({
+        data: mode === 'mock' // true for mock, false for real
+      });
+
+      service.callService(request, (result) => {
+        console.log('Connection mode updated:', result);
+      });
+    }
+  }, [ros, connected]);
+
   // Auto-connect on mount
   useEffect(() => {
     connect();
@@ -96,8 +127,15 @@ export function ROSProvider({ children }: { children: React.ReactNode }) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Update connection mode when connected
+  useEffect(() => {
+    if (connected) {
+      setConnectionMode(connectionMode);
+    }
+  }, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
-    <ROSContext.Provider value={{ ros, connected, connect, disconnect, sendCommand, subscribeToTopic }}>
+    <ROSContext.Provider value={{ ros, connected, connectionMode, connect, disconnect, sendCommand, subscribeToTopic, setConnectionMode }}>
       {children}
     </ROSContext.Provider>
   );
