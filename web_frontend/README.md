@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SkyScout Web Frontend
 
-## Getting Started
+This is the web interface for controlling the SkyScout drone system using natural language commands.
 
-First, run the development server:
+## Features
+
+- **Natural Language Input**: Send commands in plain English
+- **Real-time Telemetry**: Monitor battery, position, altitude, and drone status
+- **Mission Monitoring**: Track mission planning and execution states
+- **2D Visualization**: View drone position and waypoints on a simple map
+- **Command History**: Keep track of sent commands
+- **Emergency Stop**: Quickly halt drone operations
+
+## Tech Stack
+
+- **Next.js 15**: React framework with App Router
+- **shadcn/ui**: Modern UI components built on Radix UI
+- **Tailwind CSS**: Utility-first CSS framework
+- **roslib.js**: WebSocket connection to ROS2 via rosbridge
+- **TypeScript**: Type-safe development
+
+## Prerequisites
+
+1. ROS2 Iron installed and sourced
+2. rosbridge_suite installed: `sudo apt install ros-iron-rosbridge-suite`
+3. Node.js 18+ and npm
+
+## Installation
+
+```bash
+npm install
+```
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ROS2 Connection
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The frontend connects to ROS2 via rosbridge WebSocket on `ws://localhost:9090`.
 
-## Learn More
+Make sure rosbridge is running:
+```bash
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Topics
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The frontend subscribes to:
+- `/navigation/battery_level` - Battery percentage
+- `/navigation/current_position` - Drone position
+- `/navigation/armed` - Armed status
+- `/navigation/status` - Flight mode and status
+- `/mission_status` - Mission execution state
+- `/mission_plan` - Current mission plan
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The frontend publishes to:
+- `/web_command` - Natural language commands
 
-## Deploy on Vercel
+## UI Components
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **CommandInput**: Main input for natural language commands
+- **TelemetryDisplay**: Shows real-time drone telemetry
+- **MissionStatus**: Displays current mission state and details
+- **DroneMap**: 2D visualization of drone position
+- **CommandHistory**: List of previously sent commands
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Running the Complete System
+
+Use the launch script from the project root:
+```bash
+../launch_system.sh
+```
+
+This will start:
+1. All ROS2 nodes
+2. rosbridge WebSocket server
+3. Web development server
+
+## Build for Production
+
+```bash
+npm run build
+npm start
+```
