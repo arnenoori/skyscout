@@ -1,0 +1,17 @@
+{
+  "image": "ghcr.io/ros-dev-tools/iron-desktop:latest",
+  "postCreateCommand": "sudo apt update && sudo apt install -y nodejs npm && cd web_frontend && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "forwardPorts": [3000, 8080, 9090],
+  "remoteUser": "ros"
+}
