@@ -13,10 +13,13 @@ import math
 class MissionState(enum.Enum):
     IDLE = 0
     PLANNING = 1
-    EXECUTING = 2
-    PAUSED = 3
-    COMPLETED = 4
-    ABORTED = 5
+    ARMING = 2
+    TAKEOFF = 3
+    EXECUTING = 4
+    LANDING = 5
+    PAUSED = 6
+    COMPLETED = 7
+    ABORTED = 8
 
 
 class MissionPlannerNode(Node):
@@ -130,6 +133,12 @@ class MissionPlannerNode(Node):
             self.waypoints = self._generate_spiral_pattern(coverage_area, altitude)
         elif self.current_mission["flight_pattern"] == "perimeter":
             self.waypoints = self._generate_perimeter_pattern(coverage_area, altitude)
+        elif self.current_mission["flight_pattern"] == "zigzag":
+            self.waypoints = self._generate_zigzag_pattern(coverage_area, altitude)
+        elif self.current_mission["flight_pattern"] == "circle":
+            self.waypoints = self._generate_circle_pattern(coverage_area, altitude)
+        elif self.current_mission["flight_pattern"] == "polygon":
+            self.waypoints = self._generate_polygon_pattern(coverage_area, altitude)
         else:
             # Default to single point
             self.waypoints = [Point(x=0, y=0, z=altitude)]
@@ -284,6 +293,70 @@ class MissionPlannerNode(Node):
         waypoints.append(Point(x=radius, y=radius, z=altitude))
         waypoints.append(Point(x=-radius, y=radius, z=altitude))
         waypoints.append(Point(x=-radius, y=-radius, z=altitude))  # Close the loop
+
+        return waypoints
+
+    def _generate_zigzag_pattern(self, coverage_area: dict, altitude: float) -> list:
+        """Generate zigzag pattern waypoints for efficient area coverage."""
+        waypoints = []
+        radius = coverage_area.get("radius", 100)
+
+        # Zigzag with tighter spacing for thorough coverage
+        spacing = 10  # 10m between lines
+        num_lines = int(radius * 2 / spacing)
+
+        for i in range(num_lines):
+            y = -radius + i * spacing
+            if i % 2 == 0:
+                # Add intermediate points for smoother zigzag
+                for x in range(-radius, radius + 1, 20):
+                    waypoints.append(Point(x=float(x), y=y, z=altitude))
+            else:
+                # Reverse direction
+                for x in range(radius, -radius - 1, -20):
+                    waypoints.append(Point(x=float(x), y=y, z=altitude))
+
+        return waypoints
+
+    def _generate_circle_pattern(self, coverage_area: dict, altitude: float) -> list:
+        """Generate circular orbit pattern for target inspection."""
+        waypoints = []
+        radius = coverage_area.get("radius", 50)  # Orbit radius
+
+        # Generate 36 points for smooth circle (10-degree intervals)
+        num_points = 36
+        for i in range(num_points + 1):  # +1 to close the circle
+            angle = (i * 2 * math.pi) / num_points
+            x = radius * math.cos(angle)
+            y = radius * math.sin(angle)
+            waypoints.append(Point(x=x, y=y, z=altitude))
+
+        return waypoints
+
+    def _generate_polygon_pattern(self, coverage_area: dict, altitude: float) -> list:
+        """Generate polygon pattern from user-defined vertices."""
+        waypoints = []
+
+        # Check if vertices are provided
+        vertices = coverage_area.get("vertices", [])
+        if not vertices:
+            # Default to hexagon if no vertices provided
+            radius = coverage_area.get("radius", 100)
+            num_sides = 6
+            for i in range(num_sides + 1):  # +1 to close the polygon
+                angle = (i * 2 * math.pi) / num_sides
+                x = radius * math.cos(angle)
+                y = radius * math.sin(angle)
+                waypoints.append(Point(x=x, y=y, z=altitude))
+        else:
+            # Use provided vertices
+            for vertex in vertices:
+                waypoints.append(
+                    Point(x=vertex.get("x", 0), y=vertex.get("y", 0), z=altitude)
+                )
+            # Close the polygon
+            if len(waypoints) > 0:
+                waypoints.append(waypoints[0])
 
         return waypoints
 

@@ -13,6 +13,8 @@ import openai
 import google.generativeai as genai
 from pydantic import BaseModel, Field, validator
 from typing import Literal
+from .weather_client import WeatherClient
+from .mission_templates import MissionTemplates
 
 
 class MissionParameters(BaseModel):
@@ -32,14 +34,28 @@ class SafetyParameters(BaseModel):
     rtl_battery_threshold: int = Field(
         default=20, ge=10, le=50, description="Battery % to trigger RTL"
     )
+    weather_check: bool = Field(default=True, description="Check weather before flight")
+    max_wind_speed: float = Field(default=10.0, description="Max wind speed in m/s")
 
 
 class MissionPlan(BaseModel):
     """Structured mission plan output."""
 
-    mission_type: Literal["search", "inspect", "count", "map"]
+    mission_type: Literal[
+        "search",
+        "inspect",
+        "count",
+        "map",
+        "delivery",
+        "patrol",
+        "survey",
+        "emergency",
+        "follow",
+    ]
     target_description: str
-    flight_pattern: Literal["grid", "spiral", "perimeter", "waypoints"]
+    flight_pattern: Literal[
+        "grid", "spiral", "perimeter", "waypoints", "zigzag", "circle", "polygon"
+    ]
     parameters: MissionParameters
     safety: SafetyParameters
 
@@ -77,6 +93,7 @@ class OpenAIClient(LLMClient):
         self.client = openai.OpenAI(api_key=self.api_key)
         self.model = model
         self.logger = logging.getLogger("OpenAIClient")
+        self.weather_client = WeatherClient()
 
     def generate_mission_plan(
         self, command: str, context: Dict[str, Any]
@@ -120,20 +137,23 @@ Command: {command}
 Current Context:
 - Battery Level: {context.get("battery_percent", 100)}%
 - Current Position: {context.get("position", "Home")}
-- Weather: {context.get("weather", "Clear")}
+- Weather: {context.get("weather", {}).get("conditions", "Clear")}
+- Wind Speed: {context.get("weather", {}).get("wind_speed", 5.0)} m/s
+- Visibility: {context.get("weather", {}).get("visibility", 10.0)} km
 - Time of Day: {context.get("time", "Day")}
 
 Generate a JSON mission plan with these exact fields:
 {{
-    "mission_type": "search|inspect|count|map",
-    "target_description": "what to look for",
-    "flight_pattern": "grid|spiral|perimeter|waypoints",
+    "mission_type": "search|inspect|count|map|delivery|patrol|survey|emergency|follow",
+    "target_description": "what to look for or do",
+    "flight_pattern": "grid|spiral|perimeter|waypoints|zigzag|circle|polygon",
     "parameters": {{
         "altitude": 10-120,
         "speed": 1-10,
         "coverage_area": {{
             "center": {{"lat": number, "lon": number}},
-            "radius": 50-500
+            "radius": 50-500,
+            "vertices": [{{"x": number, "y": number}}] // optional for polygon
         }}
     }},
     "safety": {{
@@ -141,15 +161,42 @@ Generate a JSON mission plan with these exact fields:
             "max_altitude": 120,
             "max_distance": 500
         }},
-        "rtl_battery_threshold": 20
+        "rtl_battery_threshold": 20,
+        "weather_check": true,
+        "max_wind_speed": 10.0
     }}
 }}
 
+Mission Type Guidelines:
+- search: Find specific objects/people in an area
+- inspect: Detailed examination of a specific target
+- count: Count objects in an area (vehicles, animals, etc.)
+- map: Create aerial map/survey of an area
+- delivery: Navigate to location and hover for package drop
+- patrol: Follow predefined route repeatedly
+- survey: Agricultural/land survey with systematic coverage
+- emergency: Rapid response to GPS coordinates
+- follow: Track and follow a moving target
+
+Flight Pattern Guidelines:
+- grid: Systematic back-and-forth coverage (best for search/survey)
+- spiral: Expanding outward search from center
+- perimeter: Boundary inspection of an area
+- zigzag: Efficient coverage with tighter spacing
+- circle: Orbit around a target for 360° inspection
+- polygon: Custom shape for specific area coverage
+- waypoints: Custom path through specific points
+
 Important:
-- Choose appropriate altitude based on the target (higher for large area search, lower for detailed inspection)
-- Use grid pattern for systematic search, spiral for expanding search, perimeter for boundary inspection
-- Set conservative safety parameters
-- Ensure the mission can be completed with current battery level
+- Choose appropriate altitude based on the mission (higher for large area, lower for detail)
+- Adjust speed based on mission requirements (slower for inspection, faster for emergency)
+- Set conservative safety parameters based on weather and battery
+- For delivery/emergency, prioritize direct path and speed
+
+Available Templates (use if command matches):
+{self._get_template_descriptions()}
+
+If the command closely matches a template scenario, use that template's parameters as a starting point.
 """
 
     def _default_mission(self, command: str) -> MissionPlan:
@@ -166,6 +213,20 @@ Important:
             safety=SafetyParameters(),
         )
 
+    def _get_template_descriptions(self) -> str:
+        """Get descriptions of available templates for the prompt."""
+        descriptions = [
+            "- 'quick search' / 'find someone': Use quick_search template",
+            "- 'inspect building' / 'check roof': Use building_inspection template",
+            "- 'patrol' / 'security check': Use perimeter_patrol template",
+            "- 'deliver' / 'drop package': Use delivery_direct template",
+            "- 'emergency' / 'urgent': Use emergency_response template",
+            "- 'survey field' / 'check crops': Use agricultural_survey template",
+            "- 'count cars' / 'parking lot': Use parking_count template",
+            "- 'map area' / '3D scan': Use mapping_3d template",
+        ]
+        return "\n".join(descriptions)
+
 
 class GeminiClient(LLMClient):
     """Google Gemini client implementation."""
@@ -178,6 +239,8 @@ class GeminiClient(LLMClient):
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(model)
         self.logger = logging.getLogger("GeminiClient")
+        self.weather_client = WeatherClient()
+        self.templates = MissionTemplates()
 
     def generate_mission_plan(
         self, command: str, context: Dict[str, Any]
@@ -209,49 +272,10 @@ class GeminiClient(LLMClient):
             return self._default_mission(command)
 
     def _create_prompt(self, command: str, context: Dict[str, Any]) -> str:
-        """Create the prompt for Gemini (similar to OpenAI)."""
-        # Same prompt as OpenAI
-        return f"""
-Convert this natural language command into a structured drone mission plan.
-
-Command: {command}
-
-Current Context:
-- Battery Level: {context.get("battery_percent", 100)}%
-- Current Position: {context.get("position", "Home")}
-- Weather: {context.get("weather", "Clear")}
-- Time of Day: {context.get("time", "Day")}
-
-Generate a JSON mission plan with these exact fields:
-{{
-    "mission_type": "search|inspect|count|map",
-    "target_description": "what to look for",
-    "flight_pattern": "grid|spiral|perimeter|waypoints",
-    "parameters": {{
-        "altitude": 10-120,
-        "speed": 1-10,
-        "coverage_area": {{
-            "center": {{"lat": number, "lon": number}},
-            "radius": 50-500
-        }}
-    }},
-    "safety": {{
-        "geofence": {{
-            "max_altitude": 120,
-            "max_distance": 500
-        }},
-        "rtl_battery_threshold": 20
-    }}
-}}
-
-Important:
-- Choose appropriate altitude based on the target (higher for large area search, lower for detailed inspection)
-- Use grid pattern for systematic search, spiral for expanding search, perimeter for boundary inspection
-- Set conservative safety parameters
-- Ensure the mission can be completed with current battery level
-
-Return ONLY the JSON, no other text.
-"""
+        """Create the prompt for Gemini."""
+        # Use the same enhanced prompt as OpenAI but ensure JSON-only response
+        prompt = OpenAIClient._create_prompt(self, command, context)
+        return prompt + "\n\nReturn ONLY the JSON, no other text."
 
     def _default_mission(self, command: str) -> MissionPlan:
         """Create a safe default mission if generation fails."""
