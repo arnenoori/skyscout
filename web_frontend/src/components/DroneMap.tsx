@@ -20,11 +20,13 @@ export function DroneMap() {
     if (!connected) return;
 
     const unsubPosition = subscribeToTopic('/navigation/current_position', 'geometry_msgs/Point', (message) => {
-      setDronePosition({ x: message.x, y: message.y });
+      const point = message as { x: number; y: number; z: number };
+      setDronePosition({ x: point.x, y: point.y });
     });
 
     const unsubWaypoint = subscribeToTopic('/navigation/waypoint', 'geometry_msgs/Point', (message) => {
-      setWaypoints(prev => [...prev.slice(-9), { x: message.x, y: message.y }]);
+      const point = message as { x: number; y: number; z: number };
+      setWaypoints(prev => [...prev.slice(-9), { x: point.x, y: point.y }]);
     });
 
     return () => {
@@ -137,12 +139,14 @@ export function DroneMap() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <canvas
-          ref={canvasRef}
-          width={400}
-          height={300}
-          className="w-full border rounded-md bg-gray-50"
-        />
+        <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+          <canvas
+            ref={canvasRef}
+            width={400}
+            height={300}
+            className="absolute inset-0 w-full h-full border rounded-md bg-gray-50"
+          />
+        </div>
         <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-red-500 rounded-sm"></div>

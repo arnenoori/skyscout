@@ -28,24 +28,25 @@ export function TelemetryDisplay() {
     if (!connected) return;
 
     const unsubBattery = subscribeToTopic('/navigation/battery_level', 'std_msgs/Float32', (message) => {
-      setTelemetry(prev => ({ ...prev, battery: Math.round(message.data) }));
+      setTelemetry(prev => ({ ...prev, battery: Math.round((message as { data: number }).data) }));
     });
 
     const unsubPosition = subscribeToTopic('/navigation/current_position', 'geometry_msgs/Point', (message) => {
+      const point = message as { x: number; y: number; z: number };
       setTelemetry(prev => ({
         ...prev,
-        position: { x: message.x, y: message.y, z: message.z },
-        altitude: message.z
+        position: { x: point.x, y: point.y, z: point.z },
+        altitude: point.z
       }));
     });
 
     const unsubArmed = subscribeToTopic('/navigation/armed', 'std_msgs/Bool', (message) => {
-      setTelemetry(prev => ({ ...prev, armed: message.data }));
+      setTelemetry(prev => ({ ...prev, armed: (message as { data: boolean }).data }));
     });
 
     const unsubStatus = subscribeToTopic('/navigation/status', 'std_msgs/String', (message) => {
       try {
-        const status = JSON.parse(message.data);
+        const status = JSON.parse((message as { data: string }).data);
         if (status.mode) {
           setTelemetry(prev => ({ ...prev, mode: status.mode }));
         }

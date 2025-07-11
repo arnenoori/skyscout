@@ -72,7 +72,7 @@ export function CommandInput({ onCommandSent }: CommandInputProps) {
         </form>
         {!connected && (
           <p className="text-sm text-muted-foreground mt-2">
-            Connecting to drone system...
+            Connect to ROS to send commands
           </p>
         )}
       </CardContent>

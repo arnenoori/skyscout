@@ -36,14 +36,22 @@ export function MissionStatus() {
     state: 'IDLE',
     message: 'Waiting for command...'
   });
-  const [missionPlan, setMissionPlan] = useState<any>(null);
+  const [missionPlan, setMissionPlan] = useState<{
+    mission_type: string;
+    target_description: string;
+    flight_pattern: string;
+    parameters?: {
+      altitude: number;
+      speed: number;
+    };
+  } | null>(null);
 
   useEffect(() => {
     if (!connected) return;
 
     const unsubStatus = subscribeToTopic('/mission_status', 'std_msgs/String', (message) => {
       try {
-        const status = JSON.parse(message.data);
+        const status = JSON.parse((message as { data: string }).data);
         setMission(status);
       } catch (e) {
         console.error('Failed to parse mission status:', e);
@@ -52,7 +60,7 @@ export function MissionStatus() {
 
     const unsubPlan = subscribeToTopic('/mission_plan', 'std_msgs/String', (message) => {
       try {
-        const plan = JSON.parse(message.data);
+        const plan = JSON.parse((message as { data: string }).data);
         setMissionPlan(plan);
       } catch (e) {
         console.error('Failed to parse mission plan:', e);

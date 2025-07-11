@@ -10,7 +10,7 @@ interface ROSContextType {
   connect: () => void;
   disconnect: () => void;
   sendCommand: (command: string) => void;
-  subscribeToTopic: (topicName: string, messageType: string, callback: (message: any) => void) => () => void;
+  subscribeToTopic: (topicName: string, messageType: string, callback: (message: Record<string, unknown>) => void) => () => void;
   setConnectionMode: (mode: 'mock' | 'real') => void;
 }
 
@@ -19,35 +19,35 @@ const ROSContext = createContext<ROSContextType | undefined>(undefined);
 export function ROSProvider({ children }: { children: React.ReactNode }) {
   const [ros, setRos] = useState<ROSLIB.Ros | null>(null);
   const [connected, setConnected] = useState(false);
-  const [connectionMode, setConnectionModeState] = useState<'mock' | 'real'>(() => {
-    // Load from localStorage on init
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('skyscout-connection-mode') as 'mock' | 'real') || 'mock';
-    }
-    return 'mock';
-  });
+  const [connectionMode, setConnectionModeState] = useState<'mock' | 'real'>('mock');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const connect = useCallback(() => {
-    const rosInstance = new ROSLIB.Ros({
-      url: 'ws://localhost:9090' // Default rosbridge websocket URL
-    });
+    try {
+      const rosInstance = new ROSLIB.Ros({
+        url: 'ws://localhost:9090' // Default rosbridge websocket URL
+      });
 
-    rosInstance.on('connection', () => {
-      console.log('Connected to rosbridge websocket');
-      setConnected(true);
-    });
+      rosInstance.on('connection', () => {
+        console.log('Connected to rosbridge websocket');
+        setConnected(true);
+      });
 
-    rosInstance.on('error', (error) => {
-      console.error('Error connecting to rosbridge:', error);
+      rosInstance.on('error', (error) => {
+        console.warn('ROS connection error (this is normal if rosbridge is not running):', error);
+        setConnected(false);
+      });
+
+      rosInstance.on('close', () => {
+        console.log('Connection to rosbridge closed');
+        setConnected(false);
+      });
+
+      setRos(rosInstance);
+    } catch (error) {
+      console.warn('Failed to create ROS instance:', error);
       setConnected(false);
-    });
-
-    rosInstance.on('close', () => {
-      console.log('Connection to rosbridge closed');
-      setConnected(false);
-    });
-
-    setRos(rosInstance);
+    }
   }, []);
 
   const disconnect = useCallback(() => {
@@ -77,7 +77,7 @@ export function ROSProvider({ children }: { children: React.ReactNode }) {
     commandTopic.publish(message);
   }, [ros, connected]);
 
-  const subscribeToTopic = useCallback((topicName: string, messageType: string, callback: (message: any) => void) => {
+  const subscribeToTopic = useCallback((topicName: string, messageType: string, callback: (message: Record<string, unknown>) => void) => {
     if (!ros) {
       console.error('ROS not initialized');
       return () => {};
@@ -119,20 +119,41 @@ export function ROSProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ros, connected]);
 
-  // Auto-connect on mount
+  // Initialize from localStorage on client side
   useEffect(() => {
-    connect();
-    return () => {
-      disconnect();
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const savedMode = localStorage.getItem('skyscout-connection-mode') as 'mock' | 'real';
+    if (savedMode) {
+      setConnectionModeState(savedMode);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Auto-connect after initialization (optional)
+  useEffect(() => {
+    if (isInitialized) {
+      // Only auto-connect in production or if explicitly enabled
+      const shouldAutoConnect = process.env.NODE_ENV === 'production' ||
+                               process.env.NEXT_PUBLIC_AUTO_CONNECT === 'true';
+
+      if (shouldAutoConnect) {
+        const timer = setTimeout(() => {
+          connect();
+        }, 1000); // Delay to ensure page is loaded
+
+        return () => {
+          clearTimeout(timer);
+          disconnect();
+        };
+      }
+    }
+  }, [isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update connection mode when connected
   useEffect(() => {
-    if (connected) {
+    if (connected && isInitialized) {
       setConnectionMode(connectionMode);
     }
-  }, [connected]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [connected, isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <ROSContext.Provider value={{ ros, connected, connectionMode, connect, disconnect, sendCommand, subscribeToTopic, setConnectionMode }}>

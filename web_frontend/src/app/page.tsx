@@ -7,6 +7,7 @@ import { MissionStatus } from '@/components/MissionStatus';
 import { CommandHistory } from '@/components/CommandHistory';
 import { DroneMap } from '@/components/DroneMap';
 import { ConnectionModeSelector } from '@/components/ConnectionModeSelector';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { MockControlPanel } from '@/components/MockControlPanel';
 import { ROSProvider } from '@/contexts/ROSContext';
 
@@ -37,16 +38,19 @@ export default function Home() {
         </header>
 
         <main className="container mx-auto px-4 py-6">
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
             {/* Left Column - Command and Status */}
             <div className="space-y-6 lg:col-span-2">
+              <ConnectionStatus />
               <CommandInput onCommandSent={handleCommandSent} />
-              <MissionStatus />
-              <DroneMap />
+              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+                <MissionStatus />
+                <DroneMap />
+              </div>
             </div>
 
             {/* Right Column - Telemetry and History */}
-            <div className="space-y-6">
+            <div className="space-y-6 lg:col-span-1">
               <TelemetryDisplay />
               <CommandHistory commands={commands} />
               <MockControlPanel />
