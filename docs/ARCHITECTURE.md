@@ -37,6 +37,8 @@ graph TB
     subgraph "Intelligence Layer"
         E[LLM Agent<br/>OpenAI/Gemini]
         F[Prompt Manager]
+        L[Weather Service]
+        M[Mission Templates]
     end
 
     subgraph "Mission Execution Layer"
@@ -58,6 +60,8 @@ graph TB
     C -->|ROS2| D
     D -->|ROS2| E
     E -->|ROS2| F
+    E -->|API| L
+    E -->|Internal| M
     E -->|ROS2| G
     G -->|ROS2| H
     G -->|ROS2| I
@@ -158,7 +162,9 @@ graph TB
 stateDiagram-v2
     [*] --> IDLE
     IDLE --> PLANNING: New Mission
-    PLANNING --> VALIDATING: Plan Generated
+    PLANNING --> WEATHER_CHECK: Plan Generated
+    WEATHER_CHECK --> VALIDATING: Safe Conditions
+    WEATHER_CHECK --> IDLE: Unsafe Weather
     VALIDATING --> ARMING: Valid Plan
     VALIDATING --> IDLE: Invalid Plan
     ARMING --> TAKEOFF: Armed
@@ -170,11 +176,24 @@ stateDiagram-v2
 ```
 
 **Mission Types**:
-- **Search**: Grid/spiral patterns to find objects
-- **Inspect**: Detailed examination of specific targets
-- **Count**: Enumerate objects in an area
-- **Map**: Create overview of a region
-- **Track**: Follow moving objects
+- **Search**: Grid/spiral/zigzag patterns to find objects
+- **Inspect**: Circle/orbit pattern for detailed examination
+- **Count**: Systematic enumeration in an area
+- **Map**: Create overview/3D model of a region
+- **Delivery**: Point-to-point package transport
+- **Patrol**: Repeated perimeter monitoring
+- **Survey**: Agricultural/land assessment
+- **Emergency**: Rapid response with relaxed constraints
+- **Follow**: Track and follow moving objects
+
+**Flight Patterns**:
+- **Grid**: Back-and-forth systematic coverage
+- **Spiral**: Expanding outward from center
+- **Perimeter**: Boundary following
+- **Zigzag**: Efficient coverage with tighter spacing
+- **Circle**: 360° orbit around target
+- **Polygon**: Custom shape coverage
+- **Waypoints**: Direct path through points
 
 ### 5. Perception (ROS2 Node)
 
@@ -265,6 +284,8 @@ sequenceDiagram
 | `/detected_objects` | Detection2DArray | perception | mission_planner | Object detections |
 | `/navigation/waypoint` | Point | mission_planner | navigation_bridge | Target positions |
 | `/navigation/status` | String | navigation_bridge | mission_planner | Flight status |
+| `/weather/current` | String | llm_agent | mission_planner | Weather conditions |
+| `/mission_template` | String | llm_agent | web_ui | Available templates |
 
 ### WebSocket Protocol
 
@@ -307,13 +328,20 @@ Context:
 - Max range: 500m
 - Battery: {battery_percent}%
 - Current position: {position}
+- Weather: {weather_conditions}
+- Wind Speed: {wind_speed} m/s
 
 Generate a JSON mission plan with:
-1. mission_type: One of [search, inspect, count, map]
-2. target_description: What to look for
-3. flight_pattern: One of [grid, spiral, perimeter, waypoints]
+1. mission_type: One of [search, inspect, count, map, delivery, patrol, survey, emergency, follow]
+2. target_description: What to look for or do
+3. flight_pattern: One of [grid, spiral, perimeter, waypoints, zigzag, circle, polygon]
 4. parameters: Including altitude, speed, coverage_area
-5. safety: Including geofence and rtl_battery_threshold
+5. safety: Including geofence, rtl_battery_threshold, weather_check, max_wind_speed
+
+Available Templates:
+- quick_search, building_inspection, perimeter_patrol
+- delivery_direct, emergency_response, agricultural_survey
+- parking_count, 3d_mapping
 
 Ensure the mission is safe and achievable.
 """
@@ -323,9 +351,11 @@ Ensure the mission is safe and achievable.
 
 ```python
 class MissionPlanSchema(BaseModel):
-    mission_type: Literal["search", "inspect", "count", "map"]
+    mission_type: Literal["search", "inspect", "count", "map",
+                         "delivery", "patrol", "survey", "emergency", "follow"]
     target_description: str
-    flight_pattern: Literal["grid", "spiral", "perimeter", "waypoints"]
+    flight_pattern: Literal["grid", "spiral", "perimeter", "waypoints",
+                           "zigzag", "circle", "polygon"]
     parameters: MissionParameters
     safety: SafetyParameters
 
@@ -334,6 +364,12 @@ class MissionPlanSchema(BaseModel):
         if not 10 <= v.altitude <= 120:
             raise ValueError('Altitude must be between 10-120m')
         return v
+
+class SafetyParameters(BaseModel):
+    geofence: Dict[str, float]
+    rtl_battery_threshold: int = Field(ge=10, le=50)
+    weather_check: bool = True
+    max_wind_speed: float = 10.0  # m/s
 ```
 
 ## Safety Architecture
@@ -344,6 +380,8 @@ class MissionPlanSchema(BaseModel):
    - Mission validation before execution
    - Geofence checking
    - Battery threshold monitoring
+   - Weather condition verification
+   - Mission template validation
 
 2. **ROS2 Layer**
    - Watchdog timers on all nodes

@@ -15,19 +15,25 @@ SkyScout democratizes drone operations by enabling anyone to command drones usin
 - **🗣️ Natural Language Control**: Command drones with plain English - no technical expertise required
 - **🤖 LLM-Powered Intelligence**: Leverages OpenAI/Gemini APIs for understanding complex requests
 - **👁️ Real-time Object Detection**: YOLO-based perception for finding and tracking targets
-- **🛡️ Safety First**: Built-in geofencing, battery monitoring, and automatic return-to-launch
+- **🛡️ Safety First**: Built-in geofencing, battery monitoring, weather checks, and automatic return-to-launch
 - **🔄 Autonomous Execution**: Converts commands to structured mission plans executed autonomously
-- **📱 Web Interface**: Monitor missions and view results from any device
+- **📱 Web Interface**: Monitor missions with real-time map visualization (dark/light mode)
+- **🌤️ Weather Integration**: Real-time weather checks ensure safe flight conditions
+- **📋 Mission Templates**: Pre-configured scenarios for common operations (search, inspect, delivery, etc.)
+- **✈️ Advanced Flight Patterns**: Grid, spiral, perimeter, zigzag, circle/orbit, and polygon patterns
 
 ## 🚀 Quick Demo
 
 ```bash
 # Example commands SkyScout understands:
-"Find all red vehicles in the parking lot"
-"Inspect solar panels for debris or damage"
+"Find all red vehicles in the parking lot using zigzag pattern"
+"Inspect the building roof for damage" # Uses circle/orbit pattern
 "Count people wearing safety helmets on the construction site"
-"Map the perimeter of the warehouse"
-"Search for the missing hiker wearing a blue jacket"
+"Deliver medical supplies to GPS 37.7749, -122.4194"
+"Emergency response to accident at main gate"
+"Patrol the property perimeter for security"
+"Survey the agricultural field for crop health"
+"Map the construction site in 3D"
 ```
 
 ## 🏗️ System Architecture
@@ -80,6 +86,8 @@ docker-compose up
 - Node.js 20+
 - Python 3.10+
 - Git
+- OpenAI or Gemini API key
+- (Optional) OpenWeather API key for weather integration
 
 #### Step-by-Step Setup
 
@@ -94,6 +102,8 @@ cd skyscout
 # Create .env file in project root
 echo "OPENAI_API_KEY=your-openai-key" >> .env
 echo "GEMINI_API_KEY=your-gemini-key" >> .env
+# Optional: For weather integration
+echo "OPENWEATHER_API_KEY=your-weather-api-key" >> .env
 ```
 
 3. **Build ROS2 packages**:
@@ -138,11 +148,11 @@ For the best development experience:
 | Component | Description | Key Technologies |
 |-----------|-------------|------------------|
 | **command_interface** | Receives and validates natural language commands | ROS2, Python |
-| **llm_agent** | Converts NL to structured mission plans via LLM APIs | OpenAI/Gemini SDK |
+| **llm_agent** | Converts NL to structured mission plans via LLM APIs | OpenAI/Gemini SDK, Weather API |
 | **perception** | Real-time object detection and tracking | YOLO, OpenCV |
-| **mission_planner** | Executes missions with state management | SMACH, Python |
+| **mission_planner** | Executes missions with advanced flight patterns | State Machine, Python |
 | **navigation_bridge** | Interfaces with PX4 for drone control | MAVSDK, MAVLink |
-| **web_frontend** | User interface for commands and monitoring | Next.js, React |
+| **web_frontend** | Modern UI with real-time map visualization | Next.js, React, MapLibre GL |
 
 ## 🛠️ Development
 
@@ -183,10 +193,12 @@ cd web_frontend && npm test
 
 ### Built-in Safety Features
 - **Geofencing**: Configurable boundaries to prevent flyaways
-- **Battery Monitoring**: Automatic RTL at 20% battery
+- **Battery Monitoring**: Automatic RTL at configurable thresholds (20-35%)
+- **Weather Checks**: Real-time wind, visibility, and precipitation monitoring
 - **Obstacle Detection**: Future support for depth cameras
 - **Manual Override**: Always maintain RC control as backup
-- **Pre-flight Checks**: Automated sensor and GPS validation
+- **Pre-flight Checks**: Automated sensor, GPS, and weather validation
+- **Mission Templates**: Pre-validated parameters for common scenarios
 
 ### ⚠️ Important Safety Notes
 1. Always comply with local drone regulations
