@@ -40,6 +40,9 @@ You'll need at least one of these:
 - OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
 - Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
 
+Optional but recommended:
+- OpenWeather API key ([Get one here](https://openweathermap.org/api)) - For weather safety checks
+
 ## Installation Options
 
 ### Docker Setup (Recommended) 🐳
@@ -59,7 +62,10 @@ This is the easiest way to get started, especially on macOS or Windows.
 3. **Create environment file**:
    ```bash
    cp .env.example .env
-   # Edit .env and add your API keys
+   # Edit .env and add your API keys:
+   # OPENAI_API_KEY=your-key-here
+   # GEMINI_API_KEY=your-key-here
+   # OPENWEATHER_API_KEY=your-key-here (optional)
    ```
 
 4. **Start the system**:
@@ -128,6 +134,7 @@ For the best performance and hardware access on Linux.
 
    # Set API keys
    echo "export OPENAI_API_KEY='your-key-here'" >> ~/.bashrc
+   echo "export OPENWEATHER_API_KEY='your-key-here'" >> ~/.bashrc  # Optional
    source ~/.bashrc
    ```
 
@@ -202,16 +209,21 @@ make px4_sitl gazebo-classic
 
 In the web interface, try these commands:
 - "Take off and hover at 10 meters"
-- "Fly in a square pattern at 5 meters altitude"
-- "Search for red objects in a 50 meter radius"
+- "Search for red cars using zigzag pattern"
+- "Inspect the building roof for damage" (uses circle pattern)
+- "Do a quick search for missing person" (uses template)
+- "Patrol the perimeter if weather permits"
+- "Emergency response to accident site"
 
 ### 5. Monitor Execution
 
 Watch as SkyScout:
 1. Processes your natural language
-2. Generates a mission plan
-3. Executes the mission autonomously
-4. Returns results
+2. Checks weather conditions (if enabled)
+3. Generates a mission plan with appropriate flight pattern
+4. Validates safety parameters
+5. Executes the mission autonomously
+6. Returns results and detections
 
 ## Troubleshooting 🔧
 
@@ -275,6 +287,9 @@ Now that you have SkyScout running:
 4. **Customize the System**:
    - Modify LLM prompts in `llm_agent/prompts/`
    - Add new mission types in `mission_planner/`
+   - Create custom mission templates in `llm_agent/mission_templates.py`
+   - Adjust weather safety limits in `llm_agent/weather_client.py`
+   - Add new flight patterns in `mission_planner/node.py`
    - Integrate different object detection models
 
 5. **Join the Community**:
@@ -289,5 +304,8 @@ Remember:
 - Keep RC override ready
 - Follow local regulations
 - Never fly over people
+- Check weather conditions (automatic with OpenWeather API)
+- Monitor battery levels (automatic RTL at threshold)
+- Stay within geofence boundaries
 
 Happy flying! 🚁✨
