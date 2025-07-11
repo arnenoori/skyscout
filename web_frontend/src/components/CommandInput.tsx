@@ -75,6 +75,55 @@ export function CommandInput({ onCommandSent }: CommandInputProps) {
             Connect to ROS to send commands
           </p>
         )}
+
+        {/* Example Commands */}
+        <div className="mt-4 space-y-2">
+          <p className="text-sm text-muted-foreground">Example commands:</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setCommand("Search for missing person in the park using spiral pattern")}
+              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
+              disabled={!connected}
+            >
+              🔍 Search: &quot;Find missing person&quot;
+            </button>
+            <button
+              onClick={() => setCommand("Inspect the building roof for damage")}
+              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
+              disabled={!connected}
+            >
+              🏢 Inspect: &quot;Check building roof&quot;
+            </button>
+            <button
+              onClick={() => setCommand("Count cars in the parking lot")}
+              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
+              disabled={!connected}
+            >
+              🚗 Count: &quot;Count vehicles&quot;
+            </button>
+            <button
+              onClick={() => setCommand("Patrol the property perimeter for security")}
+              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
+              disabled={!connected}
+            >
+              🔒 Patrol: &quot;Security check&quot;
+            </button>
+            <button
+              onClick={() => setCommand("Emergency response to GPS coordinates 37.7749, -122.4194")}
+              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
+              disabled={!connected}
+            >
+              🚨 Emergency: &quot;Rapid response&quot;
+            </button>
+            <button
+              onClick={() => setCommand("Survey the agricultural field for crop health")}
+              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
+              disabled={!connected}
+            >
+              🌾 Survey: &quot;Check crops&quot;
+            </button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
