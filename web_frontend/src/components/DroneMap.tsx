@@ -73,8 +73,8 @@ export function DroneMap() {
   const [waypoints, setWaypoints] = useState<Position[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [mapHeight, setMapHeight] = useState('400px');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const styleElementRef = useRef<HTMLStyleElement | null>(null);
 
   // Convert local coordinates to lat/lng (assuming meters from a reference point)
   const localToLatLng = (x: number, y: number): [number, number] => {
@@ -144,6 +144,7 @@ export function DroneMap() {
 
     // Add CSS for drone marker
     const style = document.createElement('style');
+    styleElementRef.current = style;
     style.textContent = `
       .drone-marker {
         position: relative;
@@ -250,7 +251,10 @@ export function DroneMap() {
         map.current.remove();
         map.current = null;
       }
-      style.remove();
+      if (styleElementRef.current) {
+        styleElementRef.current.remove();
+        styleElementRef.current = null;
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -336,7 +340,7 @@ export function DroneMap() {
         }
       });
     }
-  }, [dronePosition, isMapReady]);
+  }, [dronePosition, isMapReady, localToLatLng]);
 
   // Update waypoints on map
   useEffect(() => {
@@ -356,7 +360,7 @@ export function DroneMap() {
         .setLngLat(localToLatLng(wp.x, wp.y))
         .addTo(map.current!);
     });
-  }, [waypoints, isMapReady]);
+  }, [waypoints, isMapReady, localToLatLng]);
 
   const centerOnDrone = () => {
     if (map.current) {
