@@ -10,6 +10,7 @@ import { ConnectionModeSelector } from '@/components/ConnectionModeSelector';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { MockControlPanel } from '@/components/MockControlPanel';
 import { ROSProvider } from '@/contexts/ROSContext';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Home() {
   const [commands, setCommands] = useState<Array<{ id: string; text: string; timestamp: Date }>>([]);
@@ -25,14 +26,17 @@ export default function Home() {
   return (
     <ROSProvider>
       <div className="min-h-screen bg-background">
-        <header className="border-b">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold">SkyScout</h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">SkyScout</h1>
                 <p className="text-sm text-muted-foreground">Natural Language Drone Control</p>
               </div>
-              <ConnectionModeSelector />
+              <div className="flex items-center gap-4">
+                <ConnectionModeSelector />
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </header>
