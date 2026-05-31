@@ -5,9 +5,9 @@ Simulates MAVLink responses and drone behavior.
 """
 
 import math
-from typing import Dict, Any
-from enum import Enum
 import time
+from enum import Enum
+from typing import Any
 
 
 class DroneMode(Enum):
@@ -232,7 +232,7 @@ class MockDrone:
         bearing = math.degrees(math.atan2(lon_diff, lat_diff))
         return (bearing + 360) % 360
 
-    def get_telemetry(self) -> Dict[str, Any]:
+    def get_telemetry(self) -> dict[str, Any]:
         """Get current telemetry data."""
         return {
             "armed": self.is_armed,
@@ -263,7 +263,6 @@ class MockDrone:
             if value == "STRONG":
                 # Could add position drift here
                 pass
-        elif scenario == "OBSTACLE":
-            if value == "AHEAD":
-                # Stop movement
-                self.target_reached = True
+        elif scenario == "OBSTACLE" and value == "AHEAD":
+            # Stop movement
+            self.target_reached = True

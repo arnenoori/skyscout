@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from geometry_msgs.msg import Point
-from std_msgs.msg import Float32, String, Bool
-from std_srvs.srv import SetBool
 import json
+
+import rclpy
+from geometry_msgs.msg import Point
+from rclpy.node import Node
+from std_msgs.msg import Bool, Float32, String
+from std_srvs.srv import SetBool
 
 from .mock_drone import MockDrone
 
@@ -219,11 +220,12 @@ class NavigationBridgeNode(Node):
         self._last_mode = telemetry["mode"]
 
         # Check for target reached
-        if telemetry.get("target_reached", False) and hasattr(
-            self, "_last_target_reached"
+        if (
+            telemetry.get("target_reached", False)
+            and hasattr(self, "_last_target_reached")
+            and not self._last_target_reached
         ):
-            if not self._last_target_reached:
-                self.publish_status({"action": "waypoint_reached"})
+            self.publish_status({"action": "waypoint_reached"})
         self._last_target_reached = telemetry.get("target_reached", False)
 
     def update_drone(self):

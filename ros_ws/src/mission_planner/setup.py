@@ -12,10 +12,10 @@ setup(
     ],
     install_requires=["setuptools"],
     zip_safe=True,
-    maintainer="todo",
-    maintainer_email="todo@todo.todo",
+    maintainer="Arne Noori",
+    maintainer_email="arne@arne.noori",
     description="Executes structured mission plans as drone behaviors",
-    license="TODO: License declaration",
+    license="MIT",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [

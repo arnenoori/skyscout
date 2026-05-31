@@ -3,18 +3,18 @@
 LLM client implementations for OpenAI and Google Gemini.
 """
 
-import os
 import json
-from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
 import logging
+import os
+from abc import ABC, abstractmethod
+from typing import Any, Literal
 
-import openai
 import google.generativeai as genai
+import openai
 from pydantic import BaseModel, Field, validator
-from typing import Literal
-from .weather_client import WeatherClient
+
 from .mission_templates import MissionTemplates
+from .weather_client import WeatherClient
 
 
 class MissionParameters(BaseModel):
@@ -22,13 +22,13 @@ class MissionParameters(BaseModel):
 
     altitude: float = Field(ge=10, le=120, description="Flight altitude in meters")
     speed: float = Field(ge=1, le=10, description="Flight speed in m/s")
-    coverage_area: Dict[str, Any] = Field(description="Area to cover")
+    coverage_area: dict[str, Any] = Field(description="Area to cover")
 
 
 class SafetyParameters(BaseModel):
     """Safety constraints for the mission."""
 
-    geofence: Dict[str, float] = Field(
+    geofence: dict[str, float] = Field(
         default={"max_altitude": 120, "max_distance": 500}
     )
     rtl_battery_threshold: int = Field(
@@ -74,7 +74,7 @@ class LLMClient(ABC):
 
     @abstractmethod
     def generate_mission_plan(
-        self, command: str, context: Dict[str, Any]
+        self, command: str, context: dict[str, Any]
     ) -> MissionPlan:
         """Generate a mission plan from natural language command."""
         pass
@@ -83,9 +83,7 @@ class LLMClient(ABC):
 class OpenAIClient(LLMClient):
     """OpenAI GPT client implementation."""
 
-    def __init__(
-        self, api_key: Optional[str] = None, model: str = "gpt-4-turbo-preview"
-    ):
+    def __init__(self, api_key: str | None = None, model: str = "gpt-4-turbo-preview"):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OpenAI API key not provided")
@@ -96,7 +94,7 @@ class OpenAIClient(LLMClient):
         self.weather_client = WeatherClient()
 
     def generate_mission_plan(
-        self, command: str, context: Dict[str, Any]
+        self, command: str, context: dict[str, Any]
     ) -> MissionPlan:
         """Generate mission plan using OpenAI GPT."""
         prompt = self._create_prompt(command, context)
@@ -127,7 +125,7 @@ class OpenAIClient(LLMClient):
             # Return a safe default mission
             return self._default_mission(command)
 
-    def _create_prompt(self, command: str, context: Dict[str, Any]) -> str:
+    def _create_prompt(self, command: str, context: dict[str, Any]) -> str:
         """Create the prompt for the LLM."""
         return f"""
 Convert this natural language command into a structured drone mission plan.
@@ -231,7 +229,7 @@ If the command closely matches a template scenario, use that template's paramete
 class GeminiClient(LLMClient):
     """Google Gemini client implementation."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-pro"):
+    def __init__(self, api_key: str | None = None, model: str = "gemini-pro"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("Gemini API key not provided")
@@ -243,7 +241,7 @@ class GeminiClient(LLMClient):
         self.templates = MissionTemplates()
 
     def generate_mission_plan(
-        self, command: str, context: Dict[str, Any]
+        self, command: str, context: dict[str, Any]
     ) -> MissionPlan:
         """Generate mission plan using Google Gemini."""
         prompt = self._create_prompt(command, context)
@@ -271,7 +269,7 @@ class GeminiClient(LLMClient):
             self.logger.error(f"Error generating mission plan: {e}")
             return self._default_mission(command)
 
-    def _create_prompt(self, command: str, context: Dict[str, Any]) -> str:
+    def _create_prompt(self, command: str, context: dict[str, Any]) -> str:
         """Create the prompt for Gemini."""
         # Use the same enhanced prompt as OpenAI but ensure JSON-only response
         prompt = OpenAIClient._create_prompt(self, command, context)
@@ -293,7 +291,7 @@ class GeminiClient(LLMClient):
 
 
 def create_llm_client(
-    provider: str = "openai", api_key: Optional[str] = None
+    provider: str = "openai", api_key: str | None = None
 ) -> LLMClient:
     """Factory function to create the appropriate LLM client."""
     if provider.lower() == "openai":

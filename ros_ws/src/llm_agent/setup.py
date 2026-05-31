@@ -19,10 +19,10 @@ setup(
         "requests>=2.31.0",
     ],
     zip_safe=True,
-    maintainer="todo",
-    maintainer_email="todo@todo.todo",
+    maintainer="Arne Noori",
+    maintainer_email="arne@arne.noori",
     description="Interfaces with cloud LLMs to convert natural language to structured JSON mission plans",
-    license="TODO: License declaration",
+    license="MIT",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [

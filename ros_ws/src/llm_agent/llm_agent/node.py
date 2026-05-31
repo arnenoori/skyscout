@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import String, Float32
-from geometry_msgs.msg import Point
 import json
 import logging
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
+
+import rclpy
+from geometry_msgs.msg import Point
+from rclpy.node import Node
+from std_msgs.msg import Float32, String
 
 from .llm_client import create_llm_client
 
@@ -121,7 +122,7 @@ class LLMAgentNode(Node):
             "alt": msg.z,
         }
 
-    def _create_default_mission(self, command: str) -> Dict[str, Any]:
+    def _create_default_mission(self, command: str) -> dict[str, Any]:
         """Create a safe default mission when LLM is unavailable."""
         return {
             "mission_type": "search",
@@ -140,7 +141,7 @@ class LLMAgentNode(Node):
             },
         }
 
-    def _log_mission_details(self, mission: Dict[str, Any]):
+    def _log_mission_details(self, mission: dict[str, Any]):
         """Log mission details for debugging."""
         self.get_logger().info(
             f"Mission details:\n"

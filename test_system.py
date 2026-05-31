@@ -4,11 +4,12 @@ Test script for the complete SkyScout system.
 This simulates sending a natural language command and observing the drone response.
 """
 
+import sys
+import time
+
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-import time
-import sys
 
 
 class SystemTester(Node):

@@ -3,21 +3,21 @@
 Weather client for checking flight conditions.
 """
 
-import os
-import requests
-from typing import Dict, Optional
 import logging
+import os
+
+import requests
 
 
 class WeatherClient:
     """Client for checking weather conditions before flight."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.getenv("OPENWEATHER_API_KEY")
         self.logger = logging.getLogger("WeatherClient")
         self.base_url = "https://api.openweathermap.org/data/2.5/weather"
 
-    def get_weather_conditions(self, lat: float, lon: float) -> Dict[str, any]:
+    def get_weather_conditions(self, lat: float, lon: float) -> dict[str, any]:
         """Get current weather conditions at given coordinates."""
         if not self.api_key:
             # Return default safe conditions if no API key
@@ -85,7 +85,7 @@ class WeatherClient:
 
         return True
 
-    def _default_weather(self) -> Dict[str, any]:
+    def _default_weather(self) -> dict[str, any]:
         """Return default weather conditions when API is unavailable."""
         return {
             "safe_to_fly": True,

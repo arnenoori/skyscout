@@ -3,14 +3,14 @@
 Predefined mission templates for common drone operations.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
 class MissionTemplates:
     """Collection of pre-configured mission templates."""
 
     @staticmethod
-    def get_template(template_name: str) -> Dict[str, Any]:
+    def get_template(template_name: str) -> dict[str, Any]:
         """Get a mission template by name."""
         templates = {
             "quick_search": MissionTemplates.quick_search(),
@@ -25,7 +25,7 @@ class MissionTemplates:
         return templates.get(template_name, MissionTemplates.quick_search())
 
     @staticmethod
-    def quick_search() -> Dict[str, Any]:
+    def quick_search() -> dict[str, Any]:
         """Quick area search for a missing person or object."""
         return {
             "mission_type": "search",
@@ -45,7 +45,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def building_inspection() -> Dict[str, Any]:
+    def building_inspection() -> dict[str, Any]:
         """360-degree building or structure inspection."""
         return {
             "mission_type": "inspect",
@@ -65,7 +65,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def perimeter_patrol() -> Dict[str, Any]:
+    def perimeter_patrol() -> dict[str, Any]:
         """Security patrol around property perimeter."""
         return {
             "mission_type": "patrol",
@@ -85,7 +85,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def delivery_direct() -> Dict[str, Any]:
+    def delivery_direct() -> dict[str, Any]:
         """Direct point-to-point delivery mission."""
         return {
             "mission_type": "delivery",
@@ -105,7 +105,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def emergency_response() -> Dict[str, Any]:
+    def emergency_response() -> dict[str, Any]:
         """Rapid emergency response to location."""
         return {
             "mission_type": "emergency",
@@ -125,7 +125,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def agricultural_survey() -> Dict[str, Any]:
+    def agricultural_survey() -> dict[str, Any]:
         """Systematic agricultural field survey."""
         return {
             "mission_type": "survey",
@@ -145,7 +145,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def parking_count() -> Dict[str, Any]:
+    def parking_count() -> dict[str, Any]:
         """Count vehicles in a parking lot."""
         return {
             "mission_type": "count",
@@ -165,7 +165,7 @@ class MissionTemplates:
         }
 
     @staticmethod
-    def mapping_3d() -> Dict[str, Any]:
+    def mapping_3d() -> dict[str, Any]:
         """3D mapping mission with multiple altitude passes."""
         return {
             "mission_type": "map",

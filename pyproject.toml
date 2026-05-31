@@ -1,0 +1,23 @@
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = [
+  "ros_ws/build",
+  "ros_ws/install",
+  "ros_ws/log",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"ros_ws/src/*/setup.py" = ["I001"]
+"test_system.py" = ["T201"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+  "ros_ws/src/llm_agent",
+  "ros_ws/src/navigation_bridge",
+]

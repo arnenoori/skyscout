@@ -4,8 +4,8 @@
   <name>command_interface</name>
   <version>0.0.0</version>
   <description>ROS2 service that receives natural language commands</description>
-  <maintainer email="todo@todo.todo">todo</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="arne@arne.noori">Arne Noori</maintainer>
+  <license>MIT</license>
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>

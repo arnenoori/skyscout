@@ -4,8 +4,8 @@
   <name>skyscout_bringup</name>
   <version>0.0.0</version>
   <description>Launch files for SkyScout system</description>
-  <maintainer email="todo@todo.todo">todo</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="arne@arne.noori">Arne Noori</maintainer>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

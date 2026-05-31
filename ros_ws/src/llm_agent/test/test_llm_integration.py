@@ -4,13 +4,13 @@ Test script for LLM integration.
 Run this to verify your API keys are working.
 """
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from llm_agent.llm_client import create_llm_client
 from dotenv import load_dotenv
+from llm_agent.llm_client import create_llm_client
 
 # Load environment variables
 load_dotenv()
@@ -24,7 +24,7 @@ def test_llm_client(provider: str = "openai"):
     try:
         # Create client
         client = create_llm_client(provider)
-        print(f"✓ Successfully initialized {provider} client")
+        print(f"OK: Successfully initialized {provider} client")
 
         # Test commands
         test_commands = [
@@ -52,7 +52,7 @@ def test_llm_client(provider: str = "openai"):
                 mission = client.generate_mission_plan(command, context)
 
                 # Print results
-                print("✓ Mission generated successfully")
+                print("OK: Mission generated successfully")
                 print(f"  Type: {mission.mission_type}")
                 print(f"  Target: {mission.target_description}")
                 print(f"  Pattern: {mission.flight_pattern}")
@@ -65,15 +65,15 @@ def test_llm_client(provider: str = "openai"):
                 # Validate mission
                 assert 10 <= mission.parameters.altitude <= 120
                 assert 1 <= mission.parameters.speed <= 10
-                print("✓ Mission parameters validated")
+                print("OK: Mission parameters validated")
 
             except Exception as e:
-                print(f"✗ Error: {e}")
+                print(f"ERROR: {e}")
 
         print(f"\n=== {provider.upper()} Client Test Complete ===\n")
 
     except Exception as e:
-        print(f"✗ Failed to initialize {provider} client: {e}")
+        print(f"ERROR: Failed to initialize {provider} client: {e}")
         print(f"  Make sure {provider.upper()}_API_KEY is set in environment")
 
 
@@ -87,7 +87,7 @@ def main():
     has_gemini = bool(os.getenv("GEMINI_API_KEY"))
 
     if not has_openai and not has_gemini:
-        print("✗ No API keys found!")
+        print("ERROR: No API keys found.")
         print("\nPlease set one of the following environment variables:")
         print("  export OPENAI_API_KEY='your-key-here'")
         print("  export GEMINI_API_KEY='your-key-here'")

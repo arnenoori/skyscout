@@ -4,8 +4,8 @@
   <name>mission_planner</name>
   <version>0.0.0</version>
   <description>Executes structured mission plans as drone behaviors</description>
-  <maintainer email="todo@todo.todo">todo</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="arne@arne.noori">Arne Noori</maintainer>
+  <license>MIT</license>
 
   <depend>rclpy</depend>
 

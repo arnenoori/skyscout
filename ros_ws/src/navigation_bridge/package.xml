@@ -4,8 +4,8 @@
   <name>navigation_bridge</name>
   <version>0.0.0</version>
   <description>MAVLink/PX4 interface for drone control</description>
-  <maintainer email="todo@todo.todo">todo</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="arne@arne.noori">Arne Noori</maintainer>
+  <license>MIT</license>
 
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>

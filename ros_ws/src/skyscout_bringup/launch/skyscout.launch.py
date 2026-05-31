@@ -3,11 +3,12 @@
 Launch file for the complete SkyScout system.
 """
 
+import os
+
 from launch import LaunchDescription
-from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, LogInfo
 from launch.substitutions import LaunchConfiguration
-import os
+from launch_ros.actions import Node
 
 
 def generate_launch_description():

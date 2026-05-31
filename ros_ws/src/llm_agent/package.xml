@@ -4,8 +4,8 @@
   <name>llm_agent</name>
   <version>0.0.0</version>
   <description>Interfaces with cloud LLMs to convert natural language to structured JSON mission plans</description>
-  <maintainer email="todo@todo.todo">todo</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="arne@arne.noori">Arne Noori</maintainer>
+  <license>MIT</license>
 
   <depend>rclpy</depend>
   <depend>std_srvs</depend>
