@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React from 'react';
 import { Plane, Cpu } from 'lucide-react';
@@ -17,8 +17,12 @@ export function ConnectionModeSelector() {
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        <Cpu className={`h-4 w-4 ${isMock ? 'text-primary' : 'text-muted-foreground'}`} />
-        <span className={`text-sm ${isMock ? 'font-medium' : 'text-muted-foreground'}`}>
+        <Cpu
+          className={`h-4 w-4 ${isMock ? 'text-primary' : 'text-muted-foreground'}`}
+        />
+        <span
+          className={`text-sm ${isMock ? 'font-medium' : 'text-muted-foreground'}`}
+        >
           Mock
         </span>
       </div>
@@ -30,8 +34,12 @@ export function ConnectionModeSelector() {
       />
 
       <div className="flex items-center gap-2">
-        <Plane className={`h-4 w-4 ${!isMock ? 'text-primary' : 'text-muted-foreground'}`} />
-        <span className={`text-sm ${!isMock ? 'font-medium' : 'text-muted-foreground'}`}>
+        <Plane
+          className={`h-4 w-4 ${!isMock ? 'text-primary' : 'text-muted-foreground'}`}
+        />
+        <span
+          className={`text-sm ${!isMock ? 'font-medium' : 'text-muted-foreground'}`}
+        >
           Real
         </span>
       </div>

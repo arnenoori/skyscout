@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React from 'react';
 import { Clock } from 'lucide-react';
@@ -26,16 +26,21 @@ export function CommandHistory({ commands }: CommandHistoryProps) {
       <CardContent>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {commands.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No commands sent yet</p>
+            <p className="text-sm text-muted-foreground">
+              No commands sent yet
+            </p>
           ) : (
-            commands.slice().reverse().map((cmd) => (
-              <div key={cmd.id} className="p-2 rounded-md bg-muted/50">
-                <p className="text-sm">{cmd.text}</p>
-                <p className="text-xs text-muted-foreground">
-                  {cmd.timestamp.toLocaleTimeString()}
-                </p>
-              </div>
-            ))
+            commands
+              .slice()
+              .reverse()
+              .map((cmd) => (
+                <div key={cmd.id} className="p-2 rounded-md bg-muted/50">
+                  <p className="text-sm">{cmd.text}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {cmd.timestamp.toLocaleTimeString()}
+                  </p>
+                </div>
+              ))
           )}
         </div>
       </CardContent>

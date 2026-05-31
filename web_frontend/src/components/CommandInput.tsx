@@ -1,7 +1,16 @@
-'use client'
+'use client';
 
 import React, { useState } from 'react';
-import { Send, Square } from 'lucide-react';
+import {
+  Building2,
+  Car,
+  Search,
+  Send,
+  Shield,
+  Siren,
+  Sprout,
+  Square,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +19,39 @@ import { useROS } from '@/contexts/ROSContext';
 interface CommandInputProps {
   onCommandSent?: (command: string) => void;
 }
+
+const EXAMPLE_COMMANDS = [
+  {
+    label: 'Search: "Find missing person"',
+    command: 'Search for missing person in the park using spiral pattern',
+    Icon: Search,
+  },
+  {
+    label: 'Inspect: "Check building roof"',
+    command: 'Inspect the building roof for damage',
+    Icon: Building2,
+  },
+  {
+    label: 'Count: "Count vehicles"',
+    command: 'Count cars in the parking lot',
+    Icon: Car,
+  },
+  {
+    label: 'Patrol: "Security check"',
+    command: 'Patrol the property perimeter for security',
+    Icon: Shield,
+  },
+  {
+    label: 'Emergency: "Rapid response"',
+    command: 'Emergency response to GPS coordinates 37.7749, -122.4194',
+    Icon: Siren,
+  },
+  {
+    label: 'Survey: "Check crops"',
+    command: 'Survey the agricultural field for crop health',
+    Icon: Sprout,
+  },
+];
 
 export function CommandInput({ onCommandSent }: CommandInputProps) {
   const [command, setCommand] = useState('');
@@ -80,48 +122,20 @@ export function CommandInput({ onCommandSent }: CommandInputProps) {
         <div className="mt-4 space-y-2">
           <p className="text-sm text-muted-foreground">Example commands:</p>
           <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setCommand("Search for missing person in the park using spiral pattern")}
-              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
-              disabled={!connected}
-            >
-              🔍 Search: &quot;Find missing person&quot;
-            </button>
-            <button
-              onClick={() => setCommand("Inspect the building roof for damage")}
-              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
-              disabled={!connected}
-            >
-              🏢 Inspect: &quot;Check building roof&quot;
-            </button>
-            <button
-              onClick={() => setCommand("Count cars in the parking lot")}
-              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
-              disabled={!connected}
-            >
-              🚗 Count: &quot;Count vehicles&quot;
-            </button>
-            <button
-              onClick={() => setCommand("Patrol the property perimeter for security")}
-              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
-              disabled={!connected}
-            >
-              🔒 Patrol: &quot;Security check&quot;
-            </button>
-            <button
-              onClick={() => setCommand("Emergency response to GPS coordinates 37.7749, -122.4194")}
-              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
-              disabled={!connected}
-            >
-              🚨 Emergency: &quot;Rapid response&quot;
-            </button>
-            <button
-              onClick={() => setCommand("Survey the agricultural field for crop health")}
-              className="text-xs text-left p-2 rounded hover:bg-muted transition-colors"
-              disabled={!connected}
-            >
-              🌾 Survey: &quot;Check crops&quot;
-            </button>
+            {EXAMPLE_COMMANDS.map(
+              ({ label, command: exampleCommand, Icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setCommand(exampleCommand)}
+                  className="flex items-center gap-2 rounded p-2 text-left text-xs transition-colors hover:bg-muted"
+                  disabled={!connected}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span>{label}</span>
+                </button>
+              )
+            )}
           </div>
         </div>
       </CardContent>

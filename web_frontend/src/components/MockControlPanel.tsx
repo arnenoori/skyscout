@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React from 'react';
 import { AlertTriangle, Battery, Navigation2, Wind } from 'lucide-react';

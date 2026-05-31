@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, AlertCircle, Loader2, Plane } from 'lucide-react';
@@ -34,7 +34,7 @@ export function MissionStatus() {
   const { subscribeToTopic, connected } = useROS();
   const [mission, setMission] = useState<MissionState>({
     state: 'IDLE',
-    message: 'Waiting for command...'
+    message: 'Waiting for command...',
   });
   const [missionPlan, setMissionPlan] = useState<{
     mission_type: string;
@@ -49,23 +49,31 @@ export function MissionStatus() {
   useEffect(() => {
     if (!connected) return;
 
-    const unsubStatus = subscribeToTopic('/mission_status', 'std_msgs/String', (message) => {
-      try {
-        const status = JSON.parse((message as { data: string }).data);
-        setMission(status);
-      } catch (e) {
-        console.error('Failed to parse mission status:', e);
+    const unsubStatus = subscribeToTopic(
+      '/mission_status',
+      'std_msgs/String',
+      (message) => {
+        try {
+          const status = JSON.parse((message as { data: string }).data);
+          setMission(status);
+        } catch (e) {
+          console.error('Failed to parse mission status:', e);
+        }
       }
-    });
+    );
 
-    const unsubPlan = subscribeToTopic('/mission_plan', 'std_msgs/String', (message) => {
-      try {
-        const plan = JSON.parse((message as { data: string }).data);
-        setMissionPlan(plan);
-      } catch (e) {
-        console.error('Failed to parse mission plan:', e);
+    const unsubPlan = subscribeToTopic(
+      '/mission_plan',
+      'std_msgs/String',
+      (message) => {
+        try {
+          const plan = JSON.parse((message as { data: string }).data);
+          setMissionPlan(plan);
+        } catch (e) {
+          console.error('Failed to parse mission plan:', e);
+        }
       }
-    });
+    );
 
     return () => {
       unsubStatus();
@@ -97,7 +105,9 @@ export function MissionStatus() {
             <>
               <div>
                 <p className="text-sm text-muted-foreground">Mission Type</p>
-                <p className="font-semibold capitalize">{missionPlan.mission_type}</p>
+                <p className="font-semibold capitalize">
+                  {missionPlan.mission_type}
+                </p>
               </div>
 
               <div>
@@ -107,15 +117,17 @@ export function MissionStatus() {
 
               <div>
                 <p className="text-sm text-muted-foreground">Pattern</p>
-                <p className="text-sm capitalize">{missionPlan.flight_pattern}</p>
+                <p className="text-sm capitalize">
+                  {missionPlan.flight_pattern}
+                </p>
               </div>
 
               {missionPlan.parameters && (
                 <div>
                   <p className="text-sm text-muted-foreground">Parameters</p>
                   <p className="text-sm">
-                    Alt: {missionPlan.parameters.altitude}m,
-                    Speed: {missionPlan.parameters.speed}m/s
+                    Alt: {missionPlan.parameters.altitude}m, Speed:{' '}
+                    {missionPlan.parameters.speed}m/s
                   </p>
                 </div>
               )}

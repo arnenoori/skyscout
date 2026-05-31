@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React from 'react';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
@@ -30,32 +30,26 @@ export function ConnectionStatus() {
             <div>
               <p className="font-medium">ROS Connection</p>
               <p className="text-sm text-muted-foreground">
-                {connected ? `Connected (${connectionMode} mode)` : 'Not connected'}
+                {connected
+                  ? `Connected (${connectionMode} mode)`
+                  : 'Not connected'}
               </p>
             </div>
           </div>
 
           {!connected ? (
-            <Button
-              onClick={handleConnect}
-              disabled={isConnecting}
-              size="sm"
-            >
+            <Button onClick={handleConnect} disabled={isConnecting} size="sm">
               {isConnecting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Connecting...
+                  Connecting…
                 </>
               ) : (
                 'Connect'
               )}
             </Button>
           ) : (
-            <Button
-              onClick={disconnect}
-              variant="outline"
-              size="sm"
-            >
+            <Button onClick={disconnect} variant="outline" size="sm">
               Disconnect
             </Button>
           )}

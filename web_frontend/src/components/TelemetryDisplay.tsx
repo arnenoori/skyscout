@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import { Battery, Navigation, Radio, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,46 +14,98 @@ interface TelemetryData {
   armed: boolean;
 }
 
+type TelemetryAction =
+  | { type: 'battery'; battery: number }
+  | { type: 'position'; position: { x: number; y: number; z: number } }
+  | { type: 'armed'; armed: boolean }
+  | { type: 'mode'; mode: string };
+
+const initialTelemetry: TelemetryData = {
+  battery: 100,
+  altitude: 0,
+  position: { x: 0, y: 0, z: 0 },
+  mode: 'MANUAL',
+  armed: false,
+};
+
+function telemetryReducer(
+  state: TelemetryData,
+  action: TelemetryAction
+): TelemetryData {
+  switch (action.type) {
+    case 'battery':
+      return { ...state, battery: action.battery };
+    case 'position':
+      return {
+        ...state,
+        position: action.position,
+        altitude: action.position.z,
+      };
+    case 'armed':
+      return { ...state, armed: action.armed };
+    case 'mode':
+      return { ...state, mode: action.mode };
+  }
+}
+
+function getBatteryColor(level: number) {
+  if (level > 60) return 'text-green-500';
+  if (level > 30) return 'text-yellow-500';
+  return 'text-red-500';
+}
+
 export function TelemetryDisplay() {
   const { subscribeToTopic, connected, connectionMode } = useROS();
-  const [telemetry, setTelemetry] = useState<TelemetryData>({
-    battery: 100,
-    altitude: 0,
-    position: { x: 0, y: 0, z: 0 },
-    mode: 'MANUAL',
-    armed: false
-  });
+  const [telemetry, dispatch] = useReducer(telemetryReducer, initialTelemetry);
 
   useEffect(() => {
     if (!connected) return;
 
-    const unsubBattery = subscribeToTopic('/navigation/battery_level', 'std_msgs/Float32', (message) => {
-      setTelemetry(prev => ({ ...prev, battery: Math.round((message as { data: number }).data) }));
-    });
-
-    const unsubPosition = subscribeToTopic('/navigation/current_position', 'geometry_msgs/Point', (message) => {
-      const point = message as { x: number; y: number; z: number };
-      setTelemetry(prev => ({
-        ...prev,
-        position: { x: point.x, y: point.y, z: point.z },
-        altitude: point.z
-      }));
-    });
-
-    const unsubArmed = subscribeToTopic('/navigation/armed', 'std_msgs/Bool', (message) => {
-      setTelemetry(prev => ({ ...prev, armed: (message as { data: boolean }).data }));
-    });
-
-    const unsubStatus = subscribeToTopic('/navigation/status', 'std_msgs/String', (message) => {
-      try {
-        const status = JSON.parse((message as { data: string }).data);
-        if (status.mode) {
-          setTelemetry(prev => ({ ...prev, mode: status.mode }));
-        }
-      } catch (e) {
-        console.error('Failed to parse status:', e);
+    const unsubBattery = subscribeToTopic(
+      '/navigation/battery_level',
+      'std_msgs/Float32',
+      (message) => {
+        dispatch({
+          type: 'battery',
+          battery: Math.round((message as { data: number }).data),
+        });
       }
-    });
+    );
+
+    const unsubPosition = subscribeToTopic(
+      '/navigation/current_position',
+      'geometry_msgs/Point',
+      (message) => {
+        const point = message as { x: number; y: number; z: number };
+        dispatch({
+          type: 'position',
+          position: { x: point.x, y: point.y, z: point.z },
+        });
+      }
+    );
+
+    const unsubArmed = subscribeToTopic(
+      '/navigation/armed',
+      'std_msgs/Bool',
+      (message) => {
+        dispatch({ type: 'armed', armed: (message as { data: boolean }).data });
+      }
+    );
+
+    const unsubStatus = subscribeToTopic(
+      '/navigation/status',
+      'std_msgs/String',
+      (message) => {
+        try {
+          const status = JSON.parse((message as { data: string }).data);
+          if (status.mode) {
+            dispatch({ type: 'mode', mode: status.mode });
+          }
+        } catch (e) {
+          console.error('Failed to parse status:', e);
+        }
+      }
+    );
 
     return () => {
       unsubBattery();
@@ -63,25 +115,23 @@ export function TelemetryDisplay() {
     };
   }, [subscribeToTopic, connected]);
 
-  const getBatteryColor = (level: number) => {
-    if (level > 60) return 'text-green-500';
-    if (level > 30) return 'text-yellow-500';
-    return 'text-red-500';
-  };
-
   return (
     <Card className={connectionMode === 'mock' ? 'border-yellow-500/50' : ''}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center justify-between">
           <span>Telemetry</span>
           {connectionMode === 'mock' && (
-            <Badge variant="warning" className="text-xs">MOCK</Badge>
+            <Badge variant="warning" className="text-xs">
+              MOCK
+            </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4">
         <div className="flex items-center gap-2">
-          <Battery className={`h-4 w-4 ${getBatteryColor(telemetry.battery)}`} />
+          <Battery
+            className={`h-4 w-4 ${getBatteryColor(telemetry.battery)}`}
+          />
           <div>
             <p className="text-sm text-muted-foreground">Battery</p>
             <p className="font-semibold">{telemetry.battery}%</p>
@@ -97,27 +147,35 @@ export function TelemetryDisplay() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Radio className={`h-4 w-4 ${connected ? 'text-green-500' : 'text-red-500'}`} />
+          <Radio
+            className={`h-4 w-4 ${connected ? 'text-green-500' : 'text-red-500'}`}
+          />
           <div>
             <p className="text-sm text-muted-foreground">Status</p>
-            <p className="font-semibold">{connected ? 'Connected' : 'Disconnected'}</p>
+            <p className="font-semibold">
+              {connected ? 'Connected' : 'Disconnected'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Zap className={`h-4 w-4 ${telemetry.armed ? 'text-red-500' : 'text-gray-400'}`} />
+          <Zap
+            className={`h-4 w-4 ${telemetry.armed ? 'text-red-500' : 'text-gray-400'}`}
+          />
           <div>
             <p className="text-sm text-muted-foreground">Mode</p>
-            <p className="font-semibold">{telemetry.armed ? telemetry.mode : 'DISARMED'}</p>
+            <p className="font-semibold">
+              {telemetry.armed ? telemetry.mode : 'DISARMED'}
+            </p>
           </div>
         </div>
 
         <div className="col-span-2 mt-2">
           <p className="text-sm text-muted-foreground">Position</p>
           <p className="font-mono text-sm">
-            X: {telemetry.position.x.toFixed(1)}m,
-            Y: {telemetry.position.y.toFixed(1)}m,
-            Z: {telemetry.position.z.toFixed(1)}m
+            X: {telemetry.position.x.toFixed(1)}m, Y:{' '}
+            {telemetry.position.y.toFixed(1)}m, Z:{' '}
+            {telemetry.position.z.toFixed(1)}m
           </p>
         </div>
       </CardContent>
