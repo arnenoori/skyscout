@@ -44,6 +44,7 @@ The app will be available at http://localhost:3000
 The frontend connects to ROS2 via rosbridge WebSocket on `ws://localhost:9090`.
 
 Make sure rosbridge is running:
+
 ```bash
 ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 ```
@@ -51,6 +52,7 @@ ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 ## Topics
 
 The frontend subscribes to:
+
 - `/navigation/battery_level` - Battery percentage
 - `/navigation/current_position` - Drone position
 - `/navigation/armed` - Armed status
@@ -59,6 +61,7 @@ The frontend subscribes to:
 - `/mission_plan` - Current mission plan
 
 The frontend publishes to:
+
 - `/web_command` - Natural language commands
 
 ## UI Components
@@ -72,11 +75,13 @@ The frontend publishes to:
 ## Running the Complete System
 
 Use the launch script from the project root:
+
 ```bash
 ../launch_system.sh
 ```
 
 This will start:
+
 1. All ROS2 nodes
 2. rosbridge WebSocket server
 3. Web development server

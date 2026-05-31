@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "includeCoAuthoredBy": false,
-    "allow": [
-      "Bash(git add:*)"
-    ],
-    "deny": []
-  }
-}

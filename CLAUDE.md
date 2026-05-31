@@ -65,7 +65,7 @@ colcon test
 
 # Frontend tests
 cd web_frontend
-npm test
+npm run verify
 ```
 
 ## API Configuration
