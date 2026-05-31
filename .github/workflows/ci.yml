@@ -1,43 +1,85 @@
-name: build
+name: ci
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  colcon:
+  web:
+    name: Web quality gates
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web_frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web_frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm run knip
+      - run: npm run doctor
+      - run: npm run audit
+      - run: npm run build
+
+  python:
+    name: Python checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: python -m unittest discover -s tests -v
+
+  ros:
+    name: ROS workspace
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
       - uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: iron
-      - name: Build ROS2 workspace
+
+      - name: Install ROS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-rosdep
+          sudo rosdep init || true
+          rosdep update
+          rosdep install --from-paths ros_ws/src --ignore-src -r -y --rosdistro iron
+
+      - name: Build
         run: |
           cd ros_ws
           source /opt/ros/iron/setup.bash
           colcon build --event-handlers console_direct+
-      - name: Run ROS2 tests
+
+      - name: Test
         run: |
           cd ros_ws
           source /opt/ros/iron/setup.bash
           source install/setup.bash
           colcon test --event-handlers console_direct+
-
-  web:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install dependencies
-        run: |
-          cd web_frontend
-          npm ci
-      - name: Lint
-        run: |
-          cd web_frontend
-          npm run lint
-      - name: Build
-        run: |
-          cd web_frontend
-          npm run build
+          colcon test-result --verbose

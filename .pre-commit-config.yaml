@@ -16,13 +16,17 @@ repos:
         args: [--fix]
     -   id: ruff-format
 
-# ESLint disabled for now - Next.js flat config not yet supported in pre-commit
-# -   repo: https://github.com/pre-commit/mirrors-eslint
-#     rev: v9.17.0
-#     hooks:
-#     -   id: eslint
-#         files: \.(js|jsx|ts|tsx)$
-#         types: [file]
-#         additional_dependencies:
-#           - eslint@8.57.0
-#           - eslint-config-next@14.2.3
+-   repo: local
+    hooks:
+    -   id: web-lint
+        name: web lint
+        entry: bash -c 'cd web_frontend && npm run lint'
+        language: system
+        pass_filenames: false
+        files: ^web_frontend/
+    -   id: web-typecheck
+        name: web typecheck
+        entry: bash -c 'cd web_frontend && npm run typecheck'
+        language: system
+        pass_filenames: false
+        files: ^web_frontend/
